@@ -1,0 +1,7 @@
+overrides:
+  # js-beautify 2.0.3 (through @vue/test-utils) wants glob 13 and editorconfig 3, which bring
+  # minimatch 10 and its denial of service (GHSA-g3hv-75wg-m249). Only js-beautify's command line
+  # loads them, and nothing here runs it: @vue/test-utils bundles the beautifier code it needs.
+  # Remove these once a js-beautify release moves to glob 14 and editorconfig 4.
+  js-beautify>glob: ^14.0.6
+  js-beautify>editorconfig: ^4.0.1

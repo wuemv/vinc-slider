@@ -2,12 +2,13 @@
 
 ## 1.0.0 (unreleased)
 
-Rewritten for Vue 3. See [Upgrading from 0.0.1](README.md#upgrading-from-001) in the README.
+Rewritten for Vue 3, and published as `@wuemv/slider`. See [Upgrading from vinc-slider 0.0.1](README.md#upgrading-from-vinc-slider-001) in the README.
 
 ### Changed
 
+- The package is `@wuemv/slider`, from the [wuemv/vinc-slider](https://github.com/wuemv/vinc-slider) repository. `vinc-slider` stays at 0.0.1.
 - Vue 3.5 or later; Vue 2 is no longer supported.
-- The CSS is a separate file, `vinc-slider/style.css`, and every rule is scoped to the slider.
+- The CSS is a separate file, `@wuemv/slider/style.css`, and every rule is scoped to the slider.
 - Headlines are `<h2>` by default (`heading-tag` sets the level).
 - `slides` has no sample default.
 
@@ -28,6 +29,6 @@ Rewritten for Vue 3. See [Upgrading from 0.0.1](README.md#upgrading-from-001) in
 - The slider's styles changed the whole page (`html`, `body`, `*`, `::selection`).
 - Slides after the third had no tint.
 
-## 0.0.1 (2019-09-26)
+## 0.0.1 (2019-09-26), as vinc-slider
 
 First release, for Vue 2.

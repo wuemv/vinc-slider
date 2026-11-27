@@ -40,7 +40,7 @@ const interval = ref(5000)
     id="usage"
     class="demo"
   >
-    <h2>vinc-slider</h2>
+    <h2>@wuemv/slider</h2>
     <p>A full-screen banner slider for Vue 3. Swipe it on a phone, or use the arrow keys once a control has focus.</p>
 
     <fieldset class="demo__controls">
@@ -59,8 +59,8 @@ const interval = ref(5000)
       <span>Slide {{ current + 1 }} of {{ slides.length }}</span>
     </fieldset>
 
-    <pre><code>import VincSlider from 'vinc-slider'
-import 'vinc-slider/style.css'
+    <pre><code>import VincSlider from '@wuemv/slider'
+import '@wuemv/slider/style.css'
 
 app.use(VincSlider)</code></pre>
   </main>
