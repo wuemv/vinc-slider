@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (unreleased)
+## 1.0.0 (2026-11-28)
 
 Rewritten for Vue 3, and published as `@wuemv/slider`. See [Upgrading from vinc-slider 0.0.1](README.md#upgrading-from-vinc-slider-001) in the README.
 
