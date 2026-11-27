@@ -10,6 +10,11 @@ updates:
     groups:
       development:
         dependency-type: development
+    ignore:
+      # typescript-eslint supports TypeScript below 6.1 only:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: typescript
+        versions: ['>=6.1']
 
   - package-ecosystem: github-actions
     directory: /
