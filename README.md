@@ -8,6 +8,8 @@ Formerly [`vinc-slider`](#upgrading-from-vinc-slider-001). A full-screen banner 
 - Renders on the server
 - Typed, with no dependencies besides Vue: 2.6 kB of JavaScript and 1.8 kB of CSS, gzipped
 
+**[See the demo](https://wuemv.github.io/vinc-slider/)**
+
 ## Install
 
 ```sh
