@@ -1,6 +1,6 @@
-# vinc-slider
+# @wuemv/slider
 
-A full-screen banner slider for Vue 3. As a slide leaves, its headline is cut away and the slide moves aside to show the next one underneath.
+Formerly [`vinc-slider`](#upgrading-from-vinc-slider-001). A full-screen banner slider for Vue 3. As a slide leaves, its headline is cut away and the slide moves aside to show the next one underneath.
 
 - Swipe on touch screens, or use the arrow keys on the slider's controls
 - Pauses on hover and keyboard focus, and has a stop button
@@ -11,7 +11,7 @@ A full-screen banner slider for Vue 3. As a slide leaves, its headline is cut aw
 ## Install
 
 ```sh
-npm install vinc-slider
+npm install @wuemv/slider
 ```
 
 It needs Vue 3.5 or later.
@@ -22,8 +22,8 @@ Register it for the whole app:
 
 ```ts
 import { createApp } from 'vue'
-import VincSlider from 'vinc-slider'
-import 'vinc-slider/style.css'
+import VincSlider from '@wuemv/slider'
+import '@wuemv/slider/style.css'
 import App from './App.vue'
 
 createApp(App).use(VincSlider).mount('#app')
@@ -33,8 +33,8 @@ Or import it where you use it:
 
 ```vue
 <script setup lang="ts">
-import { VincSlider, type VincSlide } from 'vinc-slider'
-import 'vinc-slider/style.css'
+import { VincSlider, type VincSlide } from '@wuemv/slider'
+import '@wuemv/slider/style.css'
 
 const slides: VincSlide[] = [
   {
@@ -143,12 +143,18 @@ It follows the WAI-ARIA [carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 The slider renders on the server like any component. Its timer and the reduced-motion check start only once it is mounted in the browser.
 
-## Upgrading from 0.0.1
+## Upgrading from vinc-slider 0.0.1
 
-0.0.1 was for Vue 2, which reached its end of life at the end of 2023. Vue 2 apps can stay on 0.0.1.
+The slider was published as `vinc-slider` until 0.0.1, for Vue 2, which reached its end of life at the end of 2023. Vue 2 apps can stay on `vinc-slider` 0.0.1.
 
-- **Vue 3.5 or later.** `app.use(VincSlider)` replaces `Vue.use(VincSlider)`. Import from `vinc-slider`, not `vinc-slider/dist/index`: the package's entry point works now.
-- **Import the CSS** with `import 'vinc-slider/style.css'`. It is no longer added to the page by the script.
+```sh
+npm uninstall vinc-slider
+npm install @wuemv/slider
+```
+
+- **A new package name.** Import from `@wuemv/slider`, not `vinc-slider` or `vinc-slider/dist/index`. The component is still `VincSlider`.
+- **Vue 3.5 or later.** `app.use(VincSlider)` replaces `Vue.use(VincSlider)`.
+- **Import the CSS** with `import '@wuemv/slider/style.css'`. It is no longer added to the page by the script.
 - **`slides` is required.** The three sample slides are gone.
 - **The link under the headline** appears only for slides with a `cta`. It used to be a "Call To Action" link that went nowhere.
 - **Headlines are `<h2>`** by default. 0.0.1 used `<h1>`, with invalid `<p>` tags inside: set `heading-tag="h1"` to keep that level.

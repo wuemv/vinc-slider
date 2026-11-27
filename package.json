@@ -1,5 +1,5 @@
 {
-  "name": "vinc-slider",
+  "name": "@wuemv/slider",
   "version": "1.0.0",
   "description": "A full-screen banner slider for Vue 3, with text-cut animations, swipe and keyboard support.",
   "license": "MIT",
@@ -22,11 +22,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wadday/vinc-slider.git"
+    "url": "git+https://github.com/wuemv/vinc-slider.git"
   },
-  "homepage": "https://github.com/wadday/vinc-slider#readme",
-  "bugs": "https://github.com/wadday/vinc-slider/issues",
+  "homepage": "https://github.com/wuemv/vinc-slider#readme",
+  "bugs": "https://github.com/wuemv/vinc-slider/issues",
   "keywords": [
+    "vinc-slider",
     "vue",
     "vue3",
     "slider",
@@ -34,6 +35,9 @@
     "banner",
     "hero"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "packageManager": "pnpm@11.1.1",
   "scripts": {
     "dev": "vite",
