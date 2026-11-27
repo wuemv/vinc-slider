@@ -1,660 +1,279 @@
-<template>
-  <div id="wrap" class="wrapper" v-cloak v-bind:class="{'is-previous': isPreviousSlide, 'first-load': isFirstLoad}">
-    <div class="slide-wrapper"
-         v-for="(slide, index) in slides"
-         v-bind:class="{ active: index+1 === currentSlide }"
-         v-bind:style="{ 'z-index': (slides.length - index+1), 'background-image': 'url(' + slide.image + ')' }">
-      <div class="slide-inner">
-        <div class="slide-bg-text">
-          <p>{{ slide.headline.first }}</p>
-          <p>{{ slide.headline.second }}</p>
-        </div>
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { VincSlide, VincSliderLabels } from './types'
 
-        <div class="slide-content">
-          <h1 class="slide-content-text">
-            <p>{{ slide.headline.first }}</p>
-            <p>{{ slide.headline.second }}</p>
-          </h1>
-          <a class="slide-content-cta">Call To Action</a>
+defineOptions({ name: 'VincSlider' })
+
+const props = withDefaults(
+  defineProps<{
+    slides: VincSlide[]
+    /** Moves to the next slide every `interval` milliseconds. */
+    autoplay?: boolean
+    interval?: number
+    /** Pauses the rotation while the pointer is over the slider. */
+    pauseOnHover?: boolean
+    /** The element that holds each headline. */
+    headingTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'div'
+    labels?: Partial<VincSliderLabels>
+  }>(),
+  {
+    autoplay: true,
+    interval: 5000,
+    pauseOnHover: true,
+    headingTag: 'h2',
+    labels: () => ({}),
+  },
+)
+
+/** The index of the slide on show, from 0. Bind it with `v-model:current`. */
+const current = defineModel<number>('current', { default: 0 })
+
+const defaultLabels: VincSliderLabels = {
+  carousel: 'Banner',
+  slide: (number, total) => `${number} of ${total}`,
+  goTo: (number) => `Go to slide ${number}`,
+  stop: 'Stop slide rotation',
+  start: 'Start slide rotation',
+}
+const text = computed<VincSliderLabels>(() => ({ ...defaultLabels, ...props.labels }))
+
+// A touch has to travel this far sideways to count as a swipe.
+const SWIPE_DISTANCE = 50
+
+const count = computed(() => props.slides.length)
+// The slide coming in sits above the one going out, so it slides in from the left.
+const isPrevious = ref(false)
+const isFirstLoad = ref(true)
+const hovered = ref(false)
+const focused = ref(false)
+// Set by the stop/start button, and on mount when the system asks for reduced motion.
+const stopped = ref(false)
+const mounted = ref(false)
+
+const canRotate = computed(() => props.autoplay && count.value > 1)
+const rotating = computed(
+  () =>
+    mounted.value && canRotate.value && !stopped.value && !focused.value && !(props.pauseOnHover && hovered.value),
+)
+
+function goTo(index: number): void {
+  if (count.value > 0) {
+    current.value = ((index % count.value) + count.value) % count.value
+  }
+}
+
+function next(): void {
+  goTo(current.value + 1)
+}
+
+function prev(): void {
+  goTo(current.value - 1)
+}
+
+watch(current, (now, before) => {
+  isPrevious.value = now < before
+  isFirstLoad.value = false
+})
+
+watch(count, (total) => {
+  if (current.value >= total) {
+    goTo(0)
+  }
+})
+
+let timer: ReturnType<typeof setTimeout> | undefined
+
+function schedule(): void {
+  clearTimeout(timer)
+  timer = rotating.value && props.interval > 0 ? setTimeout(next, props.interval) : undefined
+}
+
+watch([rotating, current, () => props.interval], schedule)
+
+onMounted(() => {
+  const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)')
+  stopped.value = reduceMotion ? reduceMotion.matches : false
+  mounted.value = true
+})
+
+onUnmounted(() => clearTimeout(timer))
+
+// Keyboard focus pauses the rotation, so a slide does not change under the reader. A click focuses a
+// button too, but should not stop the slider for good.
+function onFocusIn(event: FocusEvent): void {
+  const target = event.target
+  try {
+    focused.value = target instanceof Element && target.matches(':focus-visible')
+  } catch {
+    focused.value = true
+  }
+}
+
+function onFocusOut(event: FocusEvent): void {
+  const root = event.currentTarget as HTMLElement
+  if (!(event.relatedTarget instanceof Node) || !root.contains(event.relatedTarget)) {
+    focused.value = false
+  }
+}
+
+// On the controls only: a link in a slide would lose focus as its slide left.
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === 'ArrowRight') {
+    next()
+  } else if (event.key === 'ArrowLeft') {
+    prev()
+  } else {
+    return
+  }
+  event.preventDefault()
+}
+
+let swipeStart: { x: number; y: number } | null = null
+
+function onPointerDown(event: PointerEvent): void {
+  swipeStart = event.pointerType === 'mouse' || event.isPrimary === false ? null : { x: event.clientX, y: event.clientY }
+}
+
+function onPointerUp(event: PointerEvent): void {
+  if (swipeStart === null) {
+    return
+  }
+  const dx = event.clientX - swipeStart.x
+  const dy = event.clientY - swipeStart.y
+  swipeStart = null
+  if (Math.abs(dx) < SWIPE_DISTANCE || Math.abs(dx) < Math.abs(dy)) {
+    return
+  }
+  if (dx < 0) {
+    next()
+  } else {
+    prev()
+  }
+}
+
+function slideStyle(slide: VincSlide, index: number): Record<string, string | number> {
+  const style: Record<string, string | number> = {
+    zIndex: count.value - index + 1,
+    backgroundImage: `url(${JSON.stringify(slide.image)})`,
+  }
+  if (slide.tint) {
+    style['--vinc-slide-tint'] = slide.tint
+    style['--vinc-slide-overlay'] = `color-mix(in srgb, ${slide.tint} 60%, transparent)`
+    style['--vinc-slide-text-shadow'] = `2px 5px 45px color-mix(in srgb, ${slide.tint} 50%, transparent)`
+  }
+
+  return style
+}
+
+defineExpose({ goTo, next, prev })
+</script>
+
+<template>
+  <section
+    class="vinc-slider"
+    :class="{ 'vinc-slider--previous': isPrevious, 'vinc-slider--first-load': isFirstLoad }"
+    aria-roledescription="carousel"
+    :aria-label="text.carousel"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = false"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
+    @pointerdown="onPointerDown"
+    @pointerup="onPointerUp"
+    @pointercancel="swipeStart = null"
+  >
+    <div
+      class="vinc-slider__slides"
+      :aria-live="rotating ? 'off' : 'polite'"
+    >
+      <div
+        v-for="(slide, index) in slides"
+        :key="index"
+        class="vinc-slider__slide"
+        :class="[`vinc-slider__slide--tone-${(index % 3) + 1}`, { 'vinc-slider__slide--active': index === current }]"
+        :style="slideStyle(slide, index)"
+        role="group"
+        aria-roledescription="slide"
+        :aria-label="text.slide(index + 1, count)"
+        :aria-hidden="index === current ? undefined : 'true'"
+        :inert="index !== current || undefined"
+      >
+        <div class="vinc-slider__inner">
+          <div
+            class="vinc-slider__bg-text"
+            aria-hidden="true"
+          >
+            <span class="vinc-slider__line">{{ slide.headline.first }}</span>
+            <span
+              v-if="slide.headline.second"
+              class="vinc-slider__line"
+            >{{ slide.headline.second }}</span>
+          </div>
+          <div class="vinc-slider__content">
+            <component
+              :is="headingTag"
+              class="vinc-slider__headline"
+            >
+              <span class="vinc-slider__line">{{ slide.headline.first }}</span>
+              <!-- One space between the lines, for screen readers: on separate lines, Vue would add more. -->
+              <!-- eslint-disable-next-line vue/singleline-html-element-content-newline -->
+              <template v-if="slide.headline.second">{{ ' ' }}<span class="vinc-slider__line">{{ slide.headline.second }}</span></template>
+            </component>
+            <a
+              v-if="slide.cta"
+              class="vinc-slider__cta"
+              :href="slide.cta.href"
+              :target="slide.cta.target"
+              :rel="slide.cta.rel"
+            >
+              {{ slide.cta.label }}
+            </a>
+          </div>
+          <span
+            v-if="slide.alt"
+            class="vinc-slider__sr-only"
+          >{{ slide.alt }}</span>
         </div>
       </div>
     </div>
-    <div class="pagination-container">
-            <span class="pagination-item"
-                  v-for="(slide, index) in slides"
-                  v-bind:class="{ active: index + 1 === currentSlide }"
-                  v-on:click="updateSlide(index + 1)"></span>
 
+    <div
+      v-if="count > 1"
+      class="vinc-slider__controls"
+      @keydown="onKeydown"
+    >
+      <div class="vinc-slider__pagination">
+        <button
+          v-for="(slide, index) in slides"
+          :key="index"
+          type="button"
+          class="vinc-slider__dot"
+          :class="{ 'vinc-slider__dot--active': index === current }"
+          :aria-label="text.goTo(index + 1)"
+          :aria-current="index === current ? 'true' : undefined"
+          @click="goTo(index)"
+        />
+      </div>
+      <button
+        v-if="canRotate"
+        type="button"
+        class="vinc-slider__toggle"
+        :aria-label="stopped ? text.start : text.stop"
+        @click="stopped = !stopped"
+      >
+        <svg
+          v-if="stopped"
+          viewBox="0 0 12 12"
+          aria-hidden="true"
+        ><path d="M3 1.5v9l7.5-4.5z" /></svg>
+        <svg
+          v-else
+          viewBox="0 0 12 12"
+          aria-hidden="true"
+        ><path d="M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z" /></svg>
+      </button>
     </div>
-  </div>
+  </section>
 </template>
-<script>
-    export default {
-        name: 'VincSlider',
 
-        props: {
-            slides: {
-                type: Array,
-                required: true,
-                default: [
-                    {
-                        headline: {
-                            first: "The",
-                            second: "Water Villas"
-                        },
-                        image: "https://cache.marriott.com/marriottassets/marriott/MLEWH/mlewh-wow-oceanhaven-1800-hor-wide.jpg",
-                    },
-                    {
-                        headline: {
-                            first: "Fly",
-                            second: "in Maldives"
-                        },
-                        image: "https://www.telegraph.co.uk/content/dam/Travel/2016/November/maldives%20anantara%201.jpg",
-                    },
-                    {
-                        headline: {
-                            first: "Beautiful",
-                            second: "Beach"
-                        },
-                        image: "https://i.ytimg.com/vi/P9Z6okLJDv0/maxresdefault.jpg",
-                    }
-                ]
-            }
-        },
-        data() {
-
-            return {
-                currentSlide: 1,
-                isPreviousSlide: false,
-                isFirstLoad: true,
-                timer: null,
-                // slides: [
-                //     {
-                //         headlineFirstLine: "The",
-                //         headlineSecondLine: "Water villas",
-                //         bgImg: "https://cache.marriott.com/marriottassets/marriott/MLEWH/mlewh-wow-oceanhaven-1800-hor-wide.jpg",
-                //     },
-                //     {
-                //         headlineFirstLine: "Fly",
-                //         headlineSecondLine: "in Maldives",
-                //         bgImg: "https://www.telegraph.co.uk/content/dam/Travel/2016/November/maldives%20anantara%201.jpg",
-                //     },
-                //     {
-                //         headlineFirstLine: "Beautiful",
-                //         headlineSecondLine: "Beach",
-                //         bgImg: "https://i.ytimg.com/vi/P9Z6okLJDv0/maxresdefault.jpg",
-                //     }
-                // ]
-            }
-        },
-
-        mounted() {
-            this.startSlide()
-        },
-        methods: {
-            updateSlide(index) {
-                clearInterval(this.timer);
-                index < this.currentSlide ? this.isPreviousSlide = true : this.isPreviousSlide = false;
-                this.currentSlide = index;
-                this.isFirstLoad = false;
-                this.setTimer()
-            },
-
-            next() {
-                if (this.currentSlide === this.slides.length) {
-                    this.updateSlide(1)
-                } else {
-                    this.updateSlide(this.currentSlide + 1)
-                }
-            },
-
-            setTimer() {
-                this.timer = setInterval(this.next,5000)
-            },
-
-            startSlide() {
-                this.timer = setInterval(this.next,5000);
-                let productRotatorSlide = document.getElementById("wrap");
-                let startX = 0;
-                let endX = 0;
-
-                productRotatorSlide.addEventListener("touchstart", (event) => startX = event.touches[0].pageX);
-
-                productRotatorSlide.addEventListener("touchmove", (event) => endX = event.touches[0].pageX);
-
-                productRotatorSlide.addEventListener("touchend", function(event) {
-                    let threshold = startX - endX;
-
-                    if (threshold < 150 && 0 < this.currentSlide) {
-                        this.currentSlide -=1;
-                    }
-                    if (threshold > -150 && this.currentSlide < this.slides.length - 1) {
-                        this.currentSlide += 1;
-                    }
-                }.bind(this));
-
-            }
-        }
-    }
-</script>
-
-<style lang="scss">
-  html {
-    box-sizing: border-box;
-  }
-
-  *,
-  *:before,
-  *:after {
-    box-sizing: inherit;
-  }
-
-  @mixin media($breakpoint) {
-    @media (max-width: $breakpoint) {
-      @content;
-    }
-  }
-
-  @mixin media-min($breakpoint) {
-    @media (min-width: $breakpoint) {
-      @content;
-    }
-  }
-
-  @mixin media-height($breakpoint) {
-    @media (max-height: $breakpoint) {
-      @content;
-    }
-  }
-
-  // ------------- VARIABLES ------------- //
-  $whitespace-height: 50px;
-  $left-offset: 13vw;
-  $rect-width: 48vh;
-  $rect-height: 62vh;
-  $rect-border-width: 5vh;
-  $control-btn-padding: 1.6rem;
-  $control-active-btn-offset: .3rem;
-  $left-offset-small: 9vw;
-  $rect-height-small: 20vw;
-  $rect-width-small: 16vw;
-  $rect-border-width-small: 5vh;
-  // ------------- GENERAL ------------- //
-  %callout {
-    text-transform: uppercase;
-    color: #fff;
-    letter-spacing: .12rem;
-    font-size: .7rem;
-    line-height: 1;
-  }
-
-  [v-cloak] {
-    opacity: 0;
-  }
-
-  body {
-    cursor: default;
-    ::selection {
-      background-color: rgba(46, 49, 52, .7);
-      color: #f5f5f1;
-    }
-    ::-moz-selection {
-      background-color: rgba(46, 49, 52, .7);
-      color: #f5f5f1;
-    }
-  }
-
-  .wrapper {
-    height: calc(100vh - #{$whitespace-height});
-    min-height: 36rem;
-    position: relative;
-    @include media(630px) {
-      height: 100vh;
-      min-height: 0;
-    }
-  }
-
-  // ------------- SLIDES ------------- //
-  .slide {
-    &-wrapper {
-      background-size: cover;
-      height: 100%;
-      background-position: center center;
-      position: absolute;
-      width: 100%;
-      background-blend-mode: darken;
-      &:nth-child(1) {
-        background-color: rgba(115, 129, 153, .4);
-        &:before {
-          background-color: rgba(115, 129, 153, .25);
-        }
-        .slide-content-text {
-          text-shadow: 2px 5px 45px rgba(85, 96, 113, 0.25);
-        }
-      }
-      &:nth-child(2) {
-        background-color: rgba(144, 171, 184, .7);
-        &:before {
-          background-color: rgba(144, 171, 184, .3);
-        }
-        .slide-content-text {
-          text-shadow: 2px 5px 45px rgba(121, 142, 152, 0.2);
-        }
-      }
-      &:nth-child(3) {
-        background-color: rgba(86, 125, 156, .5);
-        &:before {
-          background-color: rgba(86, 125, 156, 0.2);
-        }
-        .slide-content-text {
-          text-shadow: 2px 5px 55px rgba(57, 83, 103, 0.4);
-        }
-      }
-      &:before {
-        content: "";
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-      }
-    }
-    &-inner {
-      position: relative;
-      z-index: 2;
-      height: 100%;
-      overflow: hidden;
-    }
-    &-bg-text {
-      color: #000;
-      font-size: 42vh;
-      line-height: .8;
-      opacity: .03;
-      font-weight: 900;
-      margin-top: -4rem;
-      position: absolute;
-      top: 50%;
-      left: 5vw;
-      transform: translateY(-50%);
-      > p:last-child {
-        padding-left: 4rem;
-      }
-    }
-    &-content {
-      color: #fff;
-      margin-top: 5rem;
-      position: absolute;
-      top: 50%;
-      left: calc(#{$left-offset} + (.7) * #{$rect-width});
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      @include media(1000px) {
-        left: calc(#{$left-offset} + 1rem);
-      }
-      @include media-height(730px) {
-        top: 30%;
-        transform: translateY(-30%);
-        left: calc(#{$left-offset-small} + (.7) * #{$rect-width-small});
-      }
-      &-text {
-        font-size: 9rem;
-        letter-spacing: .2rem;
-        line-height: .87;
-        font-weight: 700;
-        will-change: auto;
-        @include media-height(790px) {
-          font-size: 7rem;
-        }
-        @include media(1150px) {
-          font-size: 7rem;
-        }
-        @include media(840px) {
-          font-size: 5.5rem;
-        }
-        @include media(630px) {
-          margin-bottom: 5.5rem;
-        }
-        @include media(500px) {
-          font-size: 3.5rem;
-        }
-        > p:last-child {
-          padding-left: 3rem;
-        }
-      }
-      &-cta {
-        @extend %callout;
-        cursor: pointer;
-        align-self: flex-start;
-        margin-top: 4.5rem;
-        margin-left: calc((.3) * 48vh + 4.5rem);
-        padding: .9rem 2.2rem;
-        border-left: 1px solid #fff;
-        border-right: 1px solid #fff;
-        transition: .18s ease-in-out;
-        font-weight: 700;
-        @include media(1000px) {
-          background-color: rgba(255, 255, 255, .3);
-          padding-top: 1.2rem;
-          padding-bottom: 1.2rem;
-        }
-        @include media(630px) {
-          display: none;
-        }
-        &:hover {
-          color: #000;
-          background-color: #fff;
-        }
-      }
-    }
-
-    &-side-text {
-      @extend %callout;
-      position: absolute;
-      left: calc(#{$left-offset} - 3rem);
-      writing-mode: vertical-rl;
-      top: calc((50% - (#{$rect-height} / 2)) + (#{$rect-border-width} / 2));
-      @include media-height(790px) {
-        left: calc(#{$left-offset-small} - 3rem);
-        top: calc((50% - (#{$rect-height-small} / 2)) + (#{$rect-border-width-small} / 2));
-      }
-      @include media-height(730px) {
-        top: calc((40% - (#{$rect-height-small} / 2)) + (#{$rect-border-width-small} / 2));
-      }
-      > span:first-child {
-        font-weight: 700;
-      }
-      &:after {
-        content: "";
-        width: 1px;
-        background-color: #fff;
-        height: 40px;
-        display: block;
-        position: absolute;
-        top: calc(100% + 25px);
-        left: 50%;
-        transform: translateX(-50%);
-      }
-    }
-  }
-
-  // ------------- PAGINATION ------------- //
-  .pagination {
-    &-container {
-      position: absolute;
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      right: 2rem;
-      top: 50%;
-      transform: translateY(-50%);
-      @include media(920px) {
-        display: none;
-      }
-    }
-    &-item {
-      width: 10px;
-      height: 20px;
-      border-radius: 100px;
-      background-color: rgba(255, 255, 255, .6);
-      transition: .18s ease-in-out;
-      & + & {
-        margin-top: 1rem;
-      }
-      &.active {
-        background-color: #fff;
-        position: relative;
-        width: 10px;
-      }
-      &:not(.active) {
-        cursor: pointer;
-        &:hover {
-          background-color: #fff;
-          width: 30px;
-        }
-      }
-    }
-  }
-
-  // ------------- ANIMATION EFFECT ------------- //
-  $slide-swipe: .9s;
-  $text-cut-up: .5s;
-  @keyframes slideLeft {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-100%);
-    }
-  }
-
-  @keyframes slideRight {
-    from {
-      transform: translateX(-100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes cutTextUp {
-    from {
-      clip-path: inset(0 0 -10% 0);
-    }
-    to {
-      clip-path: inset(0 0 100% 0);
-    }
-  }
-
-  @keyframes cutTextDown {
-    from {
-      clip-path: inset(100% 0 0 0);
-    }
-    to {
-      clip-path: inset(-10% 0 -20% 0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes cutTextDownFromTop {
-    from {
-      clip-path: inset(0 0 100% 0);
-    }
-    to {
-      clip-path: inset(0 0 -30% 0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes rectMovement {
-    0% {
-      transform: translateX(0) rotate(0) translateY(-50%);
-    }
-    60% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(calc(-#{$rect-width} + -#{$left-offset})) rotate(12deg) translateY(-50%);
-      opacity: 0;
-    }
-  }
-
-  @include media-height(730px) {
-    @keyframes rectMovement {
-      0% {
-        transform: translateX(0) rotate(0) translateY(-30%);
-      }
-      60% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateX(calc(-#{$rect-width} + -#{$left-offset})) rotate(12deg) translateY(-30%);
-        opacity: 0;
-      }
-    }
-  }
-
-  @keyframes rectMovementFromRight {
-    0% {
-      transform: translateX(calc(#{$rect-width})) rotate(12deg) translateY(-50%);
-      opacity: 0;
-    }
-    60% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(0) rotate(0) translateY(-50%);
-      opacity: 1;
-      @include media-height(730px) {
-        transform: translateX(0) rotate(0) translateY(-30%);
-      }
-    }
-  }
-
-  @include media-height(730px) {
-    @keyframes rectMovementFromRight {
-      0% {
-        transform: translateX(calc(#{$rect-width})) rotate(12deg) translateY(-30%);
-        opacity: 0;
-      }
-      60% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateX(0) rotate(0) translateY(-30%);
-        opacity: 1;
-      }
-    }
-  }
-
-  @keyframes rectMovementRight {
-    0% {
-      transform: translateX(calc(-#{$rect-width} + -#{$left-offset})) rotate(12deg) translateY(-50%);
-    }
-    40% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(0) rotate(0) translateY(-50%);
-      opacity: 1;
-      @include media-height(730px) {
-        transform: translateX(0) rotate(0) translateY(-30%);
-      }
-    }
-  }
-
-  @include media-height(730px) {
-    @keyframes rectMovementRight {
-      0% {
-        transform: translateX(calc(-#{$rect-width} + -#{$left-offset})) rotate(12deg) translateY(-30%);
-      }
-      40% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateX(0) rotate(0) translateY(-30%);
-        opacity: 1;
-      }
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  .slide-wrapper {
-    opacity: 0;
-    transition-delay: $slide-swipe + $text-cut-up;
-    transition-duration: 0s;
-    transition-property: opacity;
-    will-change: opacity, transform;
-    &:not(.active) {
-      animation-delay: $text-cut-up;
-      animation-name: slideLeft;
-      animation-duration: $slide-swipe;
-      animation-timing-function: cubic-bezier(0.18, 0.54, 0.52, 0.93);
-      pointer-events: none;
-      .slide-content-text > p,
-      .slide-side-text {
-        animation-name: cutTextUp;
-        animation-duration: $text-cut-up;
-        animation-timing-function: ease-out;
-      }
-      .slide-rect {
-        animation-name: rectMovement;
-        animation-duration: $text-cut-up;
-        animation-timing-function: ease;
-        animation-fill-mode: forwards;
-      }
-    }
-    &.active {
-      transition-delay: 0s;
-      opacity: 1;
-      .slide-content-text > p {
-        opacity: 0;
-        animation-delay: $text-cut-up + .3s;
-        animation-name: cutTextDown;
-        animation-duration: $text-cut-up;
-        animation-timing-function: ease;
-        animation-fill-mode: forwards;
-      }
-      .slide-rect {
-        opacity: 0;
-        animation-name: rectMovementFromRight;
-        animation-duration: $text-cut-up - .05s;
-        animation-timing-function: ease;
-        animation-fill-mode: forwards;
-        animation-delay: $slide-swipe;
-      }
-    }
-    .is-previous & {
-      &:not(.active) {
-        animation: none;
-        .slide-rect {
-          animation: none;
-        }
-      }
-      &.active {
-        transform: translateX(-100%);
-        animation-fill-mode: forwards;
-        animation-delay: $text-cut-up;
-        animation-name: slideRight;
-        animation-duration: $slide-swipe - .1s;
-        animation-timing-function: cubic-bezier(0.18, 0.54, 0.52, 0.93);
-        .slide-rect {
-          opacity: 0;
-          animation-name: rectMovementRight;
-          animation-duration: $text-cut-up;
-          animation-timing-function: ease-out;
-          animation-fill-mode: forwards;
-          animation-delay: $slide-swipe;
-        }
-      }
-    }
-  }
-
-  .first-load {
-    .slide-wrapper.active .slide-side-text,
-    .slide-wrapper.active .slide-content-cta,
-    .slide-wrapper.active .slide-rect,
-    .controls-container {
-      opacity: 0;
-      animation-name: fadeIn;
-      animation-delay: .3s;
-      animation-duration: .3s;
-      animation-fill-mode: forwards;
-      animation-timing-function: ease-in;
-    }
-    .slide-wrapper.active .slide-content-text > p {
-      animation-name: fadeIn;
-      animation-delay: $text-cut-up;
-      animation-duration: $text-cut-up + .2s;
-    }
-  }
-
-</style>
+<style src="./style.css"></style>

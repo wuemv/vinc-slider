@@ -1,0 +1,442 @@
+/*
+ * vinc-slider. Every rule is scoped to .vinc-slider, so nothing here styles the rest of the page.
+ *
+ * Custom properties you can set on .vinc-slider or an ancestor:
+ *   --vinc-slider-height       default calc(100svh - 50px), 100svh up to 630px wide
+ *   --vinc-slider-min-height   default 36rem, none up to 630px wide
+ *   --vinc-slider-color        text and controls, default #fff
+ */
+
+.vinc-slider,
+.vinc-slider *,
+.vinc-slider *::before,
+.vinc-slider *::after {
+  box-sizing: border-box;
+}
+
+.vinc-slider {
+  --vinc-slide-swipe: 0.9s;
+  --vinc-text-cut: 0.5s;
+  --vinc-ease-swipe: cubic-bezier(0.18, 0.54, 0.52, 0.93);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: var(--vinc-slider-height, calc(100svh - 50px));
+  min-height: var(--vinc-slider-min-height, 36rem);
+  color: var(--vinc-slider-color, #fff);
+  /* Vertical swipes scroll the page; horizontal ones change the slide. */
+  touch-action: pan-y;
+}
+
+@media (max-width: 630px) {
+  .vinc-slider {
+    height: var(--vinc-slider-height, 100svh);
+    min-height: var(--vinc-slider-min-height, 0);
+  }
+}
+
+.vinc-slider__slides {
+  position: absolute;
+  inset: 0;
+}
+
+/* ------------- Slides ------------- */
+
+.vinc-slider__slide {
+  position: absolute;
+  inset: 0;
+  background-color: var(--vinc-slide-tint);
+  background-blend-mode: darken;
+  background-position: center center;
+  background-size: cover;
+  opacity: 0;
+  /* A slide going out stays visible until it has slid away. */
+  transition: opacity 0s calc(var(--vinc-slide-swipe) + var(--vinc-text-cut));
+  will-change: opacity, transform;
+}
+
+.vinc-slider__slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-color: var(--vinc-slide-overlay);
+}
+
+.vinc-slider__slide--tone-1 {
+  --vinc-slide-tint: rgba(115, 129, 153, 0.4);
+  --vinc-slide-overlay: rgba(115, 129, 153, 0.25);
+  --vinc-slide-text-shadow: 2px 5px 45px rgba(85, 96, 113, 0.25);
+}
+
+.vinc-slider__slide--tone-2 {
+  --vinc-slide-tint: rgba(144, 171, 184, 0.7);
+  --vinc-slide-overlay: rgba(144, 171, 184, 0.3);
+  --vinc-slide-text-shadow: 2px 5px 45px rgba(121, 142, 152, 0.2);
+}
+
+.vinc-slider__slide--tone-3 {
+  --vinc-slide-tint: rgba(86, 125, 156, 0.5);
+  --vinc-slide-overlay: rgba(86, 125, 156, 0.2);
+  --vinc-slide-text-shadow: 2px 5px 55px rgba(57, 83, 103, 0.4);
+}
+
+.vinc-slider__inner {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  overflow: hidden;
+}
+
+.vinc-slider__line {
+  display: block;
+}
+
+.vinc-slider__bg-text {
+  position: absolute;
+  top: 50%;
+  left: 5vw;
+  margin-top: -4rem;
+  color: #000;
+  font-size: 42vh;
+  font-weight: 900;
+  line-height: 0.8;
+  opacity: 0.03;
+  transform: translateY(-50%);
+}
+
+.vinc-slider__bg-text .vinc-slider__line + .vinc-slider__line {
+  padding-left: 4rem;
+}
+
+.vinc-slider__content {
+  position: absolute;
+  top: 50%;
+  left: calc(13vw + 0.7 * 48vh);
+  display: flex;
+  flex-direction: column;
+  margin-top: 5rem;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 1000px) {
+  .vinc-slider__content {
+    left: calc(13vw + 1rem);
+  }
+}
+
+@media (max-height: 730px) {
+  .vinc-slider__content {
+    top: 30%;
+    left: calc(9vw + 0.7 * 16vw);
+    transform: translateY(-30%);
+  }
+}
+
+.vinc-slider__headline {
+  margin: 0;
+  font-size: 9rem;
+  font-weight: 700;
+  letter-spacing: 0.2rem;
+  line-height: 0.87;
+  text-shadow: var(--vinc-slide-text-shadow);
+  /* A word longer than the screen breaks instead of running off it. */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.vinc-slider__headline .vinc-slider__line + .vinc-slider__line {
+  padding-left: 3rem;
+}
+
+@media (max-height: 790px) {
+  .vinc-slider__headline {
+    font-size: 7rem;
+  }
+}
+
+@media (max-width: 1150px) {
+  .vinc-slider__headline {
+    font-size: 7rem;
+  }
+}
+
+@media (max-width: 840px) {
+  .vinc-slider__headline {
+    font-size: 5.5rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .vinc-slider__headline {
+    font-size: min(3.5rem, 13vw);
+  }
+}
+
+.vinc-slider__cta {
+  align-self: flex-start;
+  margin-top: 4.5rem;
+  margin-left: calc(0.3 * 48vh + 4.5rem);
+  padding: 0.9rem 2.2rem;
+  border-right: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+  color: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12rem;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: 0.18s ease-in-out;
+}
+
+.vinc-slider__cta:hover {
+  background-color: #fff;
+  color: #000;
+}
+
+@media (max-width: 1000px) {
+  .vinc-slider__cta {
+    padding-top: 1.2rem;
+    padding-bottom: 1.2rem;
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@media (max-width: 630px) {
+  .vinc-slider__cta {
+    margin-top: 2.5rem;
+    margin-left: 0;
+  }
+}
+
+.vinc-slider__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------- Controls ------------- */
+
+.vinc-slider__controls {
+  position: absolute;
+  top: 50%;
+  right: 2rem;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.5rem;
+  transform: translateY(-50%);
+}
+
+.vinc-slider__pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.vinc-slider__dot,
+.vinc-slider__toggle {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.vinc-slider__dot {
+  width: 10px;
+  height: 20px;
+  border: 0;
+  border-radius: 100px;
+  background-color: color-mix(in srgb, currentColor 60%, transparent);
+  transition: 0.18s ease-in-out;
+}
+
+.vinc-slider__dot--active {
+  background-color: currentColor;
+  cursor: default;
+}
+
+.vinc-slider__dot:not(.vinc-slider__dot--active):hover {
+  width: 30px;
+  background-color: currentColor;
+}
+
+.vinc-slider__toggle {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  /* Centred under the dots, which are 10px wide. */
+  margin-right: calc(5px - 1rem);
+  border: 1px solid color-mix(in srgb, currentColor 60%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  transition: 0.18s ease-in-out;
+}
+
+.vinc-slider__toggle:hover {
+  border-color: currentColor;
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.vinc-slider__toggle svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: currentColor;
+}
+
+.vinc-slider__dot:focus-visible,
+.vinc-slider__toggle:focus-visible,
+.vinc-slider__cta:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (max-width: 920px) {
+  .vinc-slider__controls {
+    top: auto;
+    right: 50%;
+    bottom: 1.5rem;
+    flex-direction: row;
+    align-items: center;
+    transform: translateX(50%);
+  }
+
+  .vinc-slider__pagination {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .vinc-slider__dot,
+  .vinc-slider__dot:not(.vinc-slider__dot--active):hover {
+    width: 20px;
+    height: 10px;
+  }
+
+  .vinc-slider__toggle {
+    margin-right: 0;
+  }
+}
+
+/* ------------- Animation ------------- */
+
+@keyframes vinc-slide-left {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes vinc-slide-right {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes vinc-cut-text-up {
+  from {
+    clip-path: inset(0 0 -10% 0);
+  }
+
+  to {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes vinc-cut-text-down {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  to {
+    clip-path: inset(-10% 0 -20% 0);
+    opacity: 1;
+  }
+}
+
+@keyframes vinc-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Going forward, the slide going out (on top) slides away to the left. */
+.vinc-slider__slide:not(.vinc-slider__slide--active) {
+  animation: vinc-slide-left var(--vinc-slide-swipe) var(--vinc-ease-swipe) var(--vinc-text-cut);
+  pointer-events: none;
+}
+
+.vinc-slider__slide:not(.vinc-slider__slide--active) .vinc-slider__headline .vinc-slider__line {
+  animation: vinc-cut-text-up var(--vinc-text-cut) ease-out;
+}
+
+.vinc-slider__slide--active {
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+.vinc-slider__slide--active .vinc-slider__headline .vinc-slider__line {
+  opacity: 0;
+  animation: vinc-cut-text-down var(--vinc-text-cut) ease calc(var(--vinc-text-cut) + 0.3s) forwards;
+}
+
+/* Going back, the slide coming in (on top) slides in from the left. */
+.vinc-slider--previous .vinc-slider__slide:not(.vinc-slider__slide--active) {
+  animation: none;
+}
+
+.vinc-slider--previous .vinc-slider__slide--active {
+  transform: translateX(-100%);
+  animation: vinc-slide-right calc(var(--vinc-slide-swipe) - 0.1s) var(--vinc-ease-swipe) var(--vinc-text-cut) forwards;
+}
+
+.vinc-slider--first-load .vinc-slider__slide--active .vinc-slider__cta {
+  opacity: 0;
+  animation: vinc-fade-in 0.3s ease-in 0.3s forwards;
+}
+
+.vinc-slider--first-load .vinc-slider__slide--active .vinc-slider__headline .vinc-slider__line {
+  animation-name: vinc-fade-in;
+  animation-delay: var(--vinc-text-cut);
+  animation-duration: calc(var(--vinc-text-cut) + 0.2s);
+}
+
+/* Slides cross-fade instead of moving. The slider also starts stopped (see the component). */
+@media (prefers-reduced-motion: reduce) {
+  .vinc-slider__slide,
+  .vinc-slider__slide--active {
+    transition: opacity 0.3s ease 0s;
+  }
+
+  .vinc-slider .vinc-slider__slide,
+  .vinc-slider .vinc-slider__line,
+  .vinc-slider .vinc-slider__cta {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .vinc-slider .vinc-slider__line,
+  .vinc-slider .vinc-slider__cta {
+    opacity: 1 !important;
+  }
+}

@@ -1,42 +1,66 @@
 {
-  "private": false,
   "name": "vinc-slider",
-  "version": "0.0.1",
-  "description": "Simple and attractive slider for banner",
-  "main": "./build/index.js",
-  "scripts": {
-    "dev": "vue serve VincSlider.vue",
-    "build": "bili --name index --plugin vue --vue.css false",
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "1.0.0",
+  "description": "A full-screen banner slider for Vue 3, with text-cut animations, swipe and keyboard support.",
+  "license": "MIT",
+  "author": "Wadday Hassan",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/vinc-slider.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/vinc-slider.js"
+    },
+    "./style.css": "./dist/style.css"
   },
   "files": [
-    "dist/index.js",
-    "src"
+    "dist"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wadday/vinc-slider.git"
   },
-  "keywords": [
-    "Slider",
-    "vinc",
-    "banner",
-    "Vue"
-  ],
-  "author": "Wadday Hassan",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/wadday/vinc-slider/issues"
-  },
   "homepage": "https://github.com/wadday/vinc-slider#readme",
+  "bugs": "https://github.com/wadday/vinc-slider/issues",
+  "keywords": [
+    "vue",
+    "vue3",
+    "slider",
+    "carousel",
+    "banner",
+    "hero"
+  ],
+  "packageManager": "pnpm@11.1.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vue-tsc -p tsconfig.build.json",
+    "build:demo": "vite build --mode demo",
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
   "devDependencies": {
-    "babel-eslint": "^10.0.3",
-    "bili": "^4.8.1",
-    "eslint": "^6.4.0",
-    "eslint-plugin-vue": "^5.2.3",
-    "node-sass": "^4.12.0",
-    "rollup-plugin-vue": "^6.0.0",
-    "sass-loader": "^8.0.0",
-    "vue-template-compiler": "^2.6.10"
+    "@vitejs/plugin-vue": "^6.0.11",
+    "@vue/eslint-config-typescript": "^14.9.0",
+    "@vue/server-renderer": "^3.5.46",
+    "@vue/test-utils": "^2.6.0",
+    "eslint": "^10.16.0",
+    "eslint-plugin-vue": "^10.12.1",
+    "jsdom": "^31.0.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
+    "vite": "^8.4.0",
+    "vitest": "^5.1.2",
+    "vue": "^3.5.46",
+    "vue-tsc": "^3.3.14"
   }
 }
